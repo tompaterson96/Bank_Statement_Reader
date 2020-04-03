@@ -4,6 +4,8 @@ import os
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectPercentile, f_classif
+from sklearn.pipeline import FeatureUnion
+from sklearn.pipeline import Pipeline
 
 def preprocess(file_path = os.getcwd() + "\\" + "BankStatementDataset.csv", max_df = 0.5, percentile = 0.1):
 
@@ -32,25 +34,32 @@ def preprocess(file_path = os.getcwd() + "\\" + "BankStatementDataset.csv", max_
     dataset = pd.read_csv(file_path)
     array = dataset.values
     #values = array[:,0]
-    references = array[:,1]
+    #references = array[:,1]
     #features = array[:,0:2]
     labels = array[:,2]
+    
+## ADD PIPELINE FUNCTION
 
-    ### PROCEEDING WITH ONLY REFERENCES AS FEATURES
+    feature_union = FeatureUnion(transformer_list = [
+        ('value', array[:,0]),
+        ('references', Pipeline([
+            ('tfidf', TfidfVectorizer(sublinear_tf=True, max_df=max_df, stop_words='english'))
+            ]))
+            ])
 
-    features_train, features_test, labels_train, labels_test = train_test_split(references, labels, test_size=0.1, random_state=1)
+    features_train, features_test, labels_train, labels_test = train_test_split(feature_union, labels, test_size=0.1, random_state=1)
 
     vectorizer = TfidfVectorizer(sublinear_tf=True, max_df=max_df,
                                     stop_words='english')
-    features_train_transformed = vectorizer.fit_transform(features_train)
-    features_test_transformed  = vectorizer.transform(features_test)
+    features_train_transformed = vectorizer.fit_transform(features_train[:,1])
+    features_test_transformed  = vectorizer.transform(features_test[:,1])
 
     ### feature selection, because text is super high dimensional and 
     ### can be really computationally chewy as a result
-    #selector = SelectPercentile(f_classif, percentile=percentile)
-    #selector.fit(features_train_transformed, labels_train)
-    #features_train_transformed = selector.transform(features_train_transformed)
-    #features_test_transformed  = selector.transform(features_test_transformed)
+    selector = SelectPercentile(f_classif, percentile=percentile)
+    selector.fit(features_train_transformed, labels_train)
+    features_train_transformed = selector.transform(features_train_transformed)
+    features_test_transformed  = selector.transform(features_test_transformed)
 
     ### info on the data
     #print "no. of Chris training emails:", sum(labels_train)
