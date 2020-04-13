@@ -34,14 +34,44 @@ max_df = 0.45
 perc = 50
 raw_features_train, raw_features_test, features_train, features_test, \
     labels_train, labels_test = Bank_Statement_Preprocessor.preprocess(max_df = max_df, percentile=perc)
-#features_train = features_train.toarray()
-#features_test = features_test.toarray()
+features = np.concatenate((features_train, features_test))
+labels = np.concatenate((labels_train, labels_test))
+
 
 # classification and regression trees
 params = {'splitter': ('best', 'random'), 'min_samples_split': [2,3,4], 'min_samples_leaf': [1,2,3]}
+
 dtc = DecisionTreeClassifier()
-clf = GridSearchCV(dtc, params)
-clf.fit(features_train, labels_train)
+kFolds = 10
+clf = GridSearchCV(dtc, params, cv = kFolds, scoring='accuracy')
+clf.fit(features, labels)
+
+names = []
+for p in clf.cv_results_['params']:
+    names.append('%d%d%s' % \
+        (p['min_samples_leaf'], p['min_samples_split'], p['splitter'][0].upper()))
+
+data = np.zeros((kFolds,len(names)))  
+for j in range(kFolds):
+    s = 'split'+str(j)+'_test_score'
+    data[j,:] = clf.cv_results_[s]
+
+# Compare Algorithms
+pyplot.boxplot(data, labels=names)
+pyplot.title('Grid Search Results')
+pyplot.ylabel('Accuracy')
+pyplot.ylim((0.6, 1))
+pyplot.show()
+
+best_index = np.argmax(np.mean(data, axis=0))
+print('Best Parameters:')
+print(clf.cv_results_['params'][best_index])
+print('mean = ' + str(round(np.mean(data, axis=0)[best_index], 2))\
+    + ' +/- ' + str(round(np.std(data, axis=0)[best_index], 2)))
+
+    # print('MSL: %d, MSS: %d, Split: %s = Score: %f, Error: %f' % \
+    #     (p['min_samples_leaf'], p['min_samples_split'], p['splitter'], \
+    #     clf.cv_results_['mean_test_score'][i], clf.cv_results_['std_test_score'][i]))
 
 
 # # use statified 10-fold (k=10) cross validation
@@ -67,3 +97,6 @@ clf.fit(features_train, labels_train)
 #         (raw_features_test[i], pred[i], labels_test[i]))
 
 # # %%
+
+
+# %%
