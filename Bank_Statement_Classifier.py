@@ -25,6 +25,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 
 ### features_train and features_test are the features for the training
 ### and testing datasets, respectively
@@ -36,71 +37,33 @@ raw_features_train, raw_features_test, features_train, features_test, \
 #features_train = features_train.toarray()
 #features_test = features_test.toarray()
 
-# Spot Check Algorithms
-models = []
-# logistic regression
-models.append(('LR', LogisticRegression(solver='liblinear', multi_class='ovr')))
-# linear discriminant analysis
-models.append(('LDA', LinearDiscriminantAnalysis()))
-# k-nearest neighbour
-models.append(('KNN', KNeighborsClassifier()))
 # classification and regression trees
-models.append(('CART', DecisionTreeClassifier()))
-# gaussian naive bayes
-models.append(('NB', GaussianNB()))
-# support vector machine
-models.append(('SVM', SVC(gamma='auto')))
-# evaluate each model in turn
-results = []
-names = []
-for name, model in models:
-    # use statified 10-fold (k=10) cross validation
-	kfold = StratifiedKFold(n_splits=2, random_state=1, shuffle=True)
-	cv_results = cross_val_score(model, features_train, labels_train, cv=kfold, scoring='accuracy')
-	results.append(cv_results)
-	names.append(name)
-	print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
+params = {'splitter': ('best', 'random'), 'min_samples_split': [2,3,4], 'min_samples_leaf': [1,2,3]}
+dtc = DecisionTreeClassifier()
+clf = GridSearchCV(dtc, params)
+clf.fit(features_train, labels_train)
 
-    # clf = model
-    # if name == 'CART':
-    #     cart_result = []
-    #     for i in range(100):
-    #         clf.fit(features_train, labels_train)
-    #         pred = clf.predict(features_test)
-    #         result = accuracy_score(labels_test, pred)
-    #         cart_result.append(accuracy_score(labels_test, pred))
-    #     print('%s: %f' % (name, np.mean(cart_result)))
-    #     results.append(np.mean(cart_result))
 
-    # else:
-    #     clf.fit(features_train, labels_train)
-    #     pred = clf.predict(features_test)
-    #     result = accuracy_score(labels_test, pred)
-    #     print('%s: %f' % (name, result))
-    #     results.append(accuracy_score(labels_test, pred))
+# # use statified 10-fold (k=10) cross validation
+# kfold = StratifiedKFold(n_splits=2, random_state=1, shuffle=True)
+# cv_results = cross_val_score(model, features_train, labels_train, cv=kfold, scoring='accuracy')
+# print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
 
 # # Compare Algorithms
-# ax.bar(np.arange(len(names)), height = results)
-# ax.set_title('Accuracy of Different Classifiers')
-# ax.set_ylabel('Accuracy')
-# ax.set_ylim((0, 1))
-# ax.set_xticks(np.arange(len(names)))
-# ax.set_xticklabels(names)
-# fig.show()
+# pyplot.boxplot(c_vresults, labels=name)
+# pyplot.title('Algorithm Comparison')
+# pyplot.ylabel('Accuracy')
+# pyplot.ylim((0, 1))
+# pyplot.show()
 
-# Compare Algorithms
-pyplot.boxplot(results, labels=names)
-pyplot.title('Algorithm Comparison')
-pyplot.ylabel('Accuracy')
-pyplot.ylim((0, 1))
-pyplot.show()
+# #%%
 
-for i in range(len(labels_test)):
-    clf = DecisionTreeClassifier()
-    clf.fit(features_train, labels_train)
-    pred = clf.predict(features_test)
-    print(accuracy_score(labels_test, pred))
-    print('Ref: %s - Pred: %s - True: %s' % \
-        (raw_features_test[i], pred[i], labels_test[i]))
+# for i in range(len(labels_test)):
+#     clf = DecisionTreeClassifier()
+#     clf.fit(features_train, labels_train)
+#     pred = clf.predict(features_test)
+#     print(accuracy_score(labels_test, pred))
+#     print('Ref: %s - Pred: %s - True: %s' % \
+#         (raw_features_test[i], pred[i], labels_test[i]))
 
-# %%
+# # %%
